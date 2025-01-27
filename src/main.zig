@@ -2,37 +2,64 @@
 //! you are building an executable. If you are making a library, the convention
 //! is to delete this file and start with root.zig instead.
 
+const c = @cImport(@cInclude("SDL3/SDL.h"));
 const std = @import("std");
 
 pub fn main() !void {
-    // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
-    std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
+    if (c.SDL_Init(c.SDL_INIT_VIDEO)) {
+        c.SDL_Log("Unable to initialize SDL: %s", c.SDL_GetError());
+        return error.SDLInitializationFailed;
+    }
+    defer c.SDL_Quit();
 
-    // stdout is for the actual output of your application, for example if you
-    // are implementing gzip, then only the compressed bytes should be sent to
-    // stdout, not any debugging messages.
-    const stdout_file = std.io.getStdOut().writer();
-    var bw = std.io.bufferedWriter(stdout_file);
-    const stdout = bw.writer();
-
-    try stdout.print("Run `zig build test` to run the tests.\n", .{});
-
-    try bw.flush(); // Don't forget to flush!
-}
-
-test "simple test" {
-    var list = std.ArrayList(i32).init(std.testing.allocator);
-    defer list.deinit(); // Try commenting this out and see if zig detects the memory leak!
-    try list.append(42);
-    try std.testing.expectEqual(@as(i32, 42), list.pop());
-}
-
-test "fuzz example" {
-    const global = struct {
-        fn testOne(input: []const u8) anyerror!void {
-            // Try passing `--fuzz` to `zig build test` and see if it manages to fail this test case!
-            try std.testing.expect(!std.mem.eql(u8, "canyoufindme", input));
-        }
+    //Use SDL_CreateWindowWithProperties if needing to set position
+    const screen = c.SDL_CreateWindow("Boiler Window", 400, 100, c.SDL_WINDOW_BORDERLESS) orelse {
+        c.SDL_Log("Unable to create window: %s", c.SDL_GetError());
+        return error.SDLInitializationFailed;
     };
-    try std.testing.fuzz(global.testOne, .{});
+    defer c.SDL_DestroyWindow(screen);
+
+    const renderer = c.SDL_CreateRenderer(screen, -1, 0) orelse {
+        c.sdl_Log("Unable to create renderer: %s", c.SDL_GetError());
+        return error.SDLInitializationFailed;
+    };
+    defer c.SDL_DestroyRenderer(renderer);
+
+    const zig_bmp = @embedFile("zig.bmp");
+    const rw = c.SDL_IOFromConstMem(zig_bmp, zig_bmp.len) orelse {
+        c.SDL_Log("Unable to create RWFromConstMem: %s", c.SDL_GetError());
+        return error.SDLInitializationFailed;
+    };
+    defer std.debug.assert(c.SDL_CloseIO(rw) == true);
+
+    const zig_surface = c.SDL_LoadBMP_IO(rw, 0) orelse {
+        c.SDL_Log("Unable to load bmp: %s", c.SDL_GetError());
+        return error.SDLInitializationFailed;
+    };
+    defer c.SDL_DestroyTexture(zig_surface);
+
+    const zig_texture = c.SDL_CreateTextureFromSurface(renderer, zig_surface) orelse {
+        c.SDL_Log("Unable to create texture from surface: %s", c.SDL_GetError());
+        return error.SDLInitializationFailed;
+    };
+    defer c.SDL_DestroyTexture(zig_texture);
+
+    var quit = false;
+    while (!quit) {
+        var event: c.SDL_Event = undefined;
+        while (c.SDL_PollEvent(&event)) {
+            switch (event.type) {
+                c.SDL_EVENT_QUIT => {
+                    quit = true;
+                },
+                else => {},
+            }
+        }
+
+        _ = c.SDL_RenderClear(renderer);
+        _ = c.SDL_RenderTexture(renderer, zig_texture, null, null);
+        c.SDL_RenderPresent(renderer);
+
+        c.SDL_Delay(20);
+    }
 }
