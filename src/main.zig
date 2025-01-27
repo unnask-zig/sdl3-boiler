@@ -4,6 +4,7 @@
 
 const c = @cImport(@cInclude("SDL3/SDL.h"));
 const std = @import("std");
+const builtin = @import("builtin");
 
 // From SDL_video.h
 // Translate-C seems to have trouble with SDL_UINT64_C() macro appending LL
@@ -43,7 +44,11 @@ pub fn main() !void {
 
     //Use SDL_CreateWindowWithProperties if needing to set position
     //const screen = c.SDL_CreateWindow("Boiler Window", 400, 100, c.SDL_WINDOW_BORDERLESS) orelse {
-    const screen = c.SDL_CreateWindow("Boiler Window", 400, 140, SDL_WINDOW_METAL) orelse {
+    const sdl_window_type = switch (builtin.os.tag) {
+        .macos => SDL_WINDOW_METAL,
+        else => SDL_WINDOW_OPENGL,
+    };
+    const screen = c.SDL_CreateWindow("Boiler Window", 400, 140, sdl_window_type) orelse {
         c.SDL_Log("Unable to create window: %s", c.SDL_GetError());
         return error.SDLInitializationFailed;
     };
