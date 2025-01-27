@@ -43,7 +43,7 @@ pub fn main() !void {
 
     //Use SDL_CreateWindowWithProperties if needing to set position
     //const screen = c.SDL_CreateWindow("Boiler Window", 400, 100, c.SDL_WINDOW_BORDERLESS) orelse {
-    const screen = c.SDL_CreateWindow("Boiler Window", 400, 100, SDL_WINDOW_METAL) orelse {
+    const screen = c.SDL_CreateWindow("Boiler Window", 400, 140, SDL_WINDOW_METAL) orelse {
         c.SDL_Log("Unable to create window: %s", c.SDL_GetError());
         return error.SDLInitializationFailed;
     };
