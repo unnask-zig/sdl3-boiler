@@ -6,21 +6,22 @@ const c = @cImport(@cInclude("SDL3/SDL.h"));
 const std = @import("std");
 
 pub fn main() !void {
-    if (c.SDL_Init(c.SDL_INIT_VIDEO)) {
+    if (!c.SDL_Init(c.SDL_INIT_VIDEO)) {
         c.SDL_Log("Unable to initialize SDL: %s", c.SDL_GetError());
         return error.SDLInitializationFailed;
     }
     defer c.SDL_Quit();
 
     //Use SDL_CreateWindowWithProperties if needing to set position
-    const screen = c.SDL_CreateWindow("Boiler Window", 400, 100, c.SDL_WINDOW_BORDERLESS) orelse {
+    //const screen = c.SDL_CreateWindow("Boiler Window", 400, 100, c.SDL_WINDOW_BORDERLESS) orelse {
+    const screen = c.SDL_CreateWindow("Boiler Window", 400, 100, 16) orelse {
         c.SDL_Log("Unable to create window: %s", c.SDL_GetError());
         return error.SDLInitializationFailed;
     };
     defer c.SDL_DestroyWindow(screen);
 
-    const renderer = c.SDL_CreateRenderer(screen, -1, 0) orelse {
-        c.sdl_Log("Unable to create renderer: %s", c.SDL_GetError());
+    const renderer = c.SDL_CreateRenderer(screen, null) orelse {
+        c.SDL_Log("Unable to create renderer: %s", c.SDL_GetError());
         return error.SDLInitializationFailed;
     };
     defer c.SDL_DestroyRenderer(renderer);
@@ -32,11 +33,11 @@ pub fn main() !void {
     };
     defer std.debug.assert(c.SDL_CloseIO(rw) == true);
 
-    const zig_surface = c.SDL_LoadBMP_IO(rw, 0) orelse {
+    const zig_surface = c.SDL_LoadBMP_IO(rw, false) orelse {
         c.SDL_Log("Unable to load bmp: %s", c.SDL_GetError());
         return error.SDLInitializationFailed;
     };
-    defer c.SDL_DestroyTexture(zig_surface);
+    defer c.SDL_DestroySurface(zig_surface);
 
     const zig_texture = c.SDL_CreateTextureFromSurface(renderer, zig_surface) orelse {
         c.SDL_Log("Unable to create texture from surface: %s", c.SDL_GetError());
@@ -58,7 +59,7 @@ pub fn main() !void {
 
         _ = c.SDL_RenderClear(renderer);
         _ = c.SDL_RenderTexture(renderer, zig_texture, null, null);
-        c.SDL_RenderPresent(renderer);
+        _ = c.SDL_RenderPresent(renderer);
 
         c.SDL_Delay(20);
     }
