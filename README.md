@@ -1,6 +1,6 @@
 # SDL3 Boilerplate in zig
 
-Copy of Andrews SDL2 demo except SDL this only links to installed SDL3.
+Copy of Andrews SDL2 demo except this only links to installed SDL3.
 
 Tries to correct for bugs in Translate-C when discovered.
 
