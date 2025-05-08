@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 // Although this function looks imperative, note that its job is to
 // declaratively construct a build graph that will be executed by an external
@@ -33,6 +34,10 @@ pub fn build(b: *std.Build) void {
         .root_module = exe_mod,
     });
 
+    if (builtin.target.os.tag == .macos) {
+        exe.addIncludePath(.{ .cwd_relative = "/opt/local/include" });
+        exe.addLibraryPath(.{ .cwd_relative = "/opt/local/lib/" });
+    }
     exe.linkSystemLibrary("SDL3");
     exe.linkLibC();
 
